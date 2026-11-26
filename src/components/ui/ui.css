@@ -1,0 +1,158 @@
+/* ───────────── heart ───────────── */
+.heart-btn {
+  color: var(--sv-plum);
+  overflow: visible;
+}
+.heart-btn.is-active {
+  color: var(--sv-hot-pink);
+  background: #fff0f7;
+  border-color: #ffb3d9;
+}
+.heart-btn.is-active .icon {
+  animation: heart-pop 420ms var(--ease-spring);
+}
+.heart-btn--sm {
+  width: 40px;
+  min-height: 40px;
+}
+.heart-burst {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  pointer-events: none;
+}
+.heart-burst span {
+  position: absolute;
+  left: -5px;
+  top: -8px;
+  font-size: 11px;
+  color: var(--sv-hot-pink);
+  opacity: 0;
+  animation: burst 700ms var(--ease-out) forwards;
+  --a: calc(var(--i) * 51.4deg);
+}
+.heart-burst span:nth-child(odd) {
+  color: #c08bff;
+}
+@keyframes burst {
+  0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(0.4); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-26px) scale(1); }
+}
+@keyframes heart-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heart-burst { display: none; }
+  .heart-btn.is-active .icon { animation: none; }
+}
+
+/* ───────────── knob ───────────── */
+.knob {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 58px;
+  user-select: none;
+}
+.knob__dial {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: ns-resize;
+}
+.knob__dial svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.knob__track,
+.knob__arc {
+  fill: none;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+.knob__track {
+  stroke: rgb(52 36 61 / 0.1);
+  stroke-dasharray: 98.96 131.95;
+  transform: rotate(135deg);
+  transform-origin: 24px 24px;
+}
+.knob__arc {
+  stroke: var(--knob-accent, var(--sv-hot-pink));
+}
+.knob__cap {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, #fff 0 18%, transparent 42%),
+    var(--knob-face, var(--sv-chrome));
+  box-shadow: 0 3px 6px -2px rgb(52 36 61 / 0.45), inset 0 -2px 3px rgb(52 36 61 / 0.18), inset 0 1px 1px #fff;
+}
+.knob__pointer {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 3px;
+  height: 9px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--sv-ink);
+}
+.knob--pink { --knob-face: linear-gradient(160deg, #ffd3ea, #ff8fcb); --knob-accent: var(--sv-hot-pink); }
+.knob--blue { --knob-face: linear-gradient(160deg, #e1f1ff, #8cc6ff); --knob-accent: #3d93e0; }
+.knob--lilac { --knob-face: linear-gradient(160deg, #f1eaff, #b8a2ff); --knob-accent: #8a6cf0; }
+.knob__label {
+  font-size: 9px;
+  color: var(--sv-plum);
+}
+.knob__value {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: rgb(52 36 61 / 0.75);
+  min-height: 1.2em;
+}
+.knob.is-disabled {
+  opacity: 0.4;
+}
+.knob.is-disabled .knob__dial {
+  cursor: not-allowed;
+}
+
+/* ───────────── LED meter ───────────── */
+.meter {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  padding: 6px 5px;
+  border-radius: 10px;
+  background: rgb(52 36 61 / 0.85);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.5);
+}
+.meter__led {
+  width: 10px;
+  height: 6px;
+  border-radius: 3px;
+  background: #7ce0b8;
+  opacity: clamp(0.16, calc((var(--lit) - var(--n) + 1) * 999), 1);
+  box-shadow: 0 0 6px currentColor;
+  color: transparent;
+}
+.meter__led:nth-child(-n + 4) { background: #fff0a8; }
+.meter__led:nth-child(-n + 3) { background: #ff8fcb; }
+.meter__clip {
+  font-size: 9px;
+  line-height: 1;
+  color: #ff5ead;
+  opacity: 0.18;
+}
+.meter[data-clip='true'] .meter__clip {
+  opacity: 1;
+  text-shadow: 0 0 6px #ff5ead;
+}

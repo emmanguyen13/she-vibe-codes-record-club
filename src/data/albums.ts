@@ -108,6 +108,15 @@ export const albums: Album[] = [
     art: { pattern: 'hearts', colors: ['#FF5EAD', '#FFC2E2', '#FFF9F5'] },
     spineColor: '#FF7FB8', themeColor: '#FFCFE6', previewAudioUrl: audio('heart-shaped-hotkey'),
   },
+  // ── Real release, played through Apple Music's official embed ──
+  // Artwork is our own generated art (the official cover isn't licensed here).
+  {
+    id: 'starboy', artist: 'The Weeknd', title: 'Starboy', trackTitle: 'Starboy',
+    year: '2016', label: 'XO / Republic', format: 'LP', genre: 'R&B · Pop',
+    art: { pattern: 'stars', colors: ['#3A1F3D', '#FF5EAD', '#FFF0A8'], stamp: '2016' },
+    spineColor: '#E23B6A', themeColor: '#FFC9DA',
+    appleMusicUrl: 'https://music.apple.com/vn/album/starboy/1440871397',
+  },
   // ── No preview configured: demonstrates the honest "unavailable" state ──
   // To connect a streaming service instead, add any of these (official players only):
   //   youtubeUrl:    'https://www.youtube.com/watch?v=VIDEO_ID',

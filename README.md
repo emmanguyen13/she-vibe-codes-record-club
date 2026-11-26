@@ -83,29 +83,47 @@ bpm: 124,                               // needed for Sync
 
 ---
 
-## Spotify: what is (and isn't) supported
+## Streaming services: YouTube, SoundCloud, Apple Music, Spotify
 
-Nothing in this build pretends to be connected to Spotify. By default no album has Spotify data.
+Add any of these fields to an album in `src/data/albums.ts`. Only the services' **official** players are used, and their scripts load only when a record actually needs them.
 
-**Supported: official Spotify embed (per album).**
 ```ts
-spotifyEmbedUrl: 'https://open.spotify.com/embed/album/<ALBUM_ID>',
-spotifyAlbumUrl: 'https://open.spotify.com/album/<ALBUM_ID>',
+youtubeUrl:      'https://www.youtube.com/watch?v=VIDEO_ID',   // or youtu.be/…, /shorts/…, or the bare 11-char ID
+soundcloudUrl:   'https://soundcloud.com/artist/track',        // public track or playlist
+appleMusicUrl:   'https://music.apple.com/us/album/name/ID',   // album, song or playlist link
+spotifyEmbedUrl: 'https://open.spotify.com/embed/album/ID',    // + optional spotifyAlbumUrl for "Open in Spotify"
 ```
-When an album has a valid embed URL and **no** `previewAudioUrl`, the Shelf player shows Spotify's own iframe player plus an "Open in Spotify" link.
-- Playback is controlled inside Spotify's iframe, and Spotify decides whether listeners hear a preview or the full track (usually full tracks need a logged-in Spotify user).
-- Our play button, spinning vinyl and tonearm are **not** driven by Spotify, so they're hidden or idle for these records instead of faking a state.
 
-**Not supported: mixing Spotify audio.** Neither the embed nor the Web Playback SDK gives access to the raw audio stream, so crossfading, EQ, meters and two independent Spotify decks are impossible. This app never extracts, proxies or records Spotify audio. If you load a Spotify-only record on a DJ deck, the deck shows `UNAVAILABLE` and gives the reason.
+If a record has more than one source, the player shows **source tabs** (Audio / YouTube / SoundCloud / Apple Music / Spotify). The default order is the order shown in the table below.
 
-**If you later want the Spotify Web Playback SDK** (full-track control in Shelf Mode only):
-1. Create an app at <https://developer.spotify.com/dashboard> and register your redirect URI.
-2. Use the **Authorization Code with PKCE** flow. Never put a client secret in frontend code. If you need refresh tokens server-side, keep the secret on a backend.
-3. Request these scopes: `streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state`.
-4. Listeners need **Spotify Premium**, and the SDK only works in supported desktop browsers (not mobile Safari).
-5. Store `VITE_SPOTIFY_CLIENT_ID` and `VITE_SPOTIFY_REDIRECT_URI` in `.env.local`.
-6. Add a `kind: 'spotify-sdk'` branch in `src/audio/adapters.ts`, and only report PLAYING when the SDK's `player_state_changed` event says so.
-7. Keep DJ mixer features disabled for that source.
+| Source | How it's connected | Our play/pause + seek | Vinyl & tonearm | DJ Mode |
+| --- | --- | --- | --- | --- |
+| Audio file (`previewAudioUrl`) | Web Audio engine | ✅ | ✅ real state | ✅ full mixing |
+| **YouTube** | [IFrame Player API](https://developers.google.com/youtube/iframe_api_reference) (`youtube-nocookie.com` host) | ✅ via the API | ✅ follows YouTube's own state events (buffering doesn't count as playing) | ❌ |
+| **SoundCloud** | [Widget API](https://developers.soundcloud.com/docs/api/html5-widget) | ✅ via the API | ✅ follows SoundCloud's PLAY/PAUSE/FINISH events | ❌ |
+| **Apple Music** | Official embed (`embed.music.apple.com`) | ❌ controlled inside Apple's player | idle | ❌ |
+| **Spotify** | Official embed (`open.spotify.com/embed`) | ❌ controlled inside Spotify's player | idle | ❌ |
+
+Rules this follows:
+- **No credentials needed** for any of the above.
+- Full tracks on Apple Music and Spotify require the listener to be signed in to that service with a subscription. Otherwise those players play short previews.
+- **The YouTube video stays visible** in a player at least 200 px tall, as YouTube's API terms require. We never hide the video or separate its audio.
+- **Nothing is mixed.** No streaming service exposes its raw audio, so these records show `UNAVAILABLE` on the DJ decks, with the reason, and they're tagged "YouTube only" and so on in the deck's Load dialog. DJ Mode mixes only audio files you're licensed to process.
+- If a provider reports an error, the player shows it in plain words. Errors include a private or removed video, the owner disabling embedding, or the script being blocked by a content blocker.
+- **Privacy:** loading a YouTube, SoundCloud, Apple or Spotify player connects the visitor's browser to that company. If you need a cookie banner, gate these sources behind consent.
+
+**Zing MP3:** there's no official public API, so it's not integrated. Unofficial "Zing APIs" scrape the site, and this project deliberately doesn't use them.
+
+### Optional upgrades that need developer accounts
+- **Apple MusicKit JS:** lets our own controls drive Apple Music. You need an Apple Developer Program membership and a MusicKit key, plus a small backend to sign the developer token (never ship the private key to the browser).
+- **Spotify Web Playback SDK:** gives full-track control in Shelf Mode only. Setup:
+  1. Create an app at <https://developer.spotify.com/dashboard> and register your redirect URI.
+  2. Use **Authorization Code with PKCE**. Never put a client secret in frontend code.
+  3. Request the scopes `streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state`.
+  4. Listeners need **Spotify Premium** and a supported desktop browser.
+  5. Store `VITE_SPOTIFY_CLIENT_ID` and `VITE_SPOTIFY_REDIRECT_URI` in `.env.local`.
+  6. Add an SDK branch in `src/audio/adapters.ts` that reports PLAYING only from `player_state_changed`.
+  7. Keep the mixer disabled for that source.
 
 ---
 
@@ -122,7 +140,9 @@ type Album = {
   spineColor: string;       // shelf spine
   themeColor: string;       // stage background when selected
   bpm?: number; trackTitle?: string;
-  previewAudioUrl?: string; spotifyAlbumUrl?: string; spotifyEmbedUrl?: string;
+  previewAudioUrl?: string;
+  youtubeUrl?: string; soundcloudUrl?: string; appleMusicUrl?: string;
+  spotifyAlbumUrl?: string; spotifyEmbedUrl?: string;
 };
 ```
 - **Cover art:** by default each sleeve is generated as SVG (`src/components/stage/CoverArt.tsx`). Patterns: hearts, stars, checker, waves, bubbles, flower, smiley, chrome, rings, pixel, butterfly, grid. Set `coverImage` only for artwork you're licensed to use. Don't hotlink.
@@ -134,7 +154,7 @@ type Album = {
 If `qrUrl` is `null`, an abstract sticker is shown instead of a fake QR code. If it's set, a real "Visit ↗" link appears.
 
 ### Files the owner should replace
-- `src/data/albums.ts`: your catalogue
+- `src/data/albums.ts`: your catalogue, plus any YouTube, SoundCloud, Apple Music or Spotify links
 - `public/audio/*`: your licensed audio (or keep the originals)
 - `src/config.ts`: copy, event label, credit line
 - Branding is typographic (an "SVC" monogram chip plus the wordmark). Swap in the official She Vibe Codes logo when one is supplied (`components/layout/Header.tsx`, the `brand-chip`).
@@ -151,13 +171,15 @@ src/
   data/albums.ts              sample catalogue (fictional)
   audio/
     engine.ts                 Web Audio engine: shelf + deck A/B channels, master
-    adapters.ts               source abstraction: file | spotify (embed) | none
+    adapters.ts               source abstraction: file | youtube | soundcloud | spotify | apple | none
+    external/                 YouTube & SoundCloud controller store, script loader, API typings
     mixMath.ts (+ .test.ts)   crossfade curve, sync rate, beat-phase alignment
     useChannel.ts             useSyncExternalStore binding
   components/
     layout/   Header, MenuPopover, StageBar, InfoPanel
     stage/    FeaturedRecordStage, AlbumSleeve, CoverArt, VinylRecord, Tonearm,
-              PlaybackControls, ProgressBar, StageSticker
+              PlaybackControls (source tabs), ProgressBar, StageSticker,
+              embeds/ (YouTubeEmbed, SoundCloudEmbed, IframeEmbed)
     shelf/    RecordShelf (listbox + roving tabindex), RecordSpine
     dj/       DJMode, Deck, Mixer, TrackPicker (<dialog>)
     ui/       Icon, HeartButton, Knob, LevelMeter
@@ -196,4 +218,5 @@ The Shelf channel uses the same chain but bypasses the crossfader.
 - Pitch changes key as well as tempo (vinyl-style). There's no key-lock/time-stretching.
 - Sync is a one-shot match, not a continuous lock. If you move the pitch fader afterwards, the decks drift apart (the Sync button lights only while the tempos actually match).
 - The demo WAVs are about 20 MB in total. For production, convert real catalogue audio to AAC/MP3.
-- Spotify playback state isn't mirrored into the custom player (no SDK wired in). See above.
+- Spotify and Apple Music playback state isn't mirrored into the custom player: they're embed-only, with no SDK wired in.
+- YouTube and SoundCloud load in about 1–5 s. On iOS, the first YouTube play may need a tap on the video itself (an iOS media rule).

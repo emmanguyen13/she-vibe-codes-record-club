@@ -109,6 +109,11 @@ export const albums: Album[] = [
     spineColor: '#FF7FB8', themeColor: '#FFCFE6', previewAudioUrl: audio('heart-shaped-hotkey'),
   },
   // ── No preview configured: demonstrates the honest "unavailable" state ──
+  // To connect a streaming service instead, add any of these (official players only):
+  //   youtubeUrl:    'https://www.youtube.com/watch?v=VIDEO_ID',
+  //   soundcloudUrl: 'https://soundcloud.com/artist/track',
+  //   appleMusicUrl: 'https://music.apple.com/us/album/name/ALBUM_ID',
+  //   spotifyEmbedUrl: 'https://open.spotify.com/embed/album/ALBUM_ID',
   {
     id: 'velvet-placeholder', artist: 'Velvet Placeholder', title: 'Lorem Ipsum Love Songs',
     year: '2003', label: 'TBA', format: 'LP', genre: 'Indie Pop',

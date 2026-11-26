@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Mode } from './types';
 import { albums, albumById } from './data/albums';
 import { engine } from './audio/engine';
-import { describeSource } from './audio/adapters';
+import { availableSources, describeSource, type SourceKind } from './audio/adapters';
+import { external } from './audio/external/store';
+import { useExternal } from './audio/external/useExternal';
 import { syncRate } from './audio/mixMath';
 import { useChannel } from './audio/useChannel';
 import { useFavourites } from './lib/hooks';
@@ -21,8 +23,15 @@ export default function App() {
   const [favouritesOnly, setFavouritesOnly] = useState(false);
   const { favs, toggle, isFav } = useFavourites();
   const shelfState = useChannel(engine.shelf);
+  const ext = useExternal();
+  const [sourcePref, setSourcePref] = useState<{ albumId: string; kind: SourceKind } | null>(null);
 
   const album = albumById(selectedId) ?? albums[0];
+  const sources = availableSources(album);
+  const sourceKind: SourceKind =
+    sourcePref?.albumId === album.id && sources.some((s) => s.kind === sourcePref.kind)
+      ? sourcePref.kind
+      : describeSource(album).kind;
   const visible = useMemo(() => (favouritesOnly ? albums.filter((a) => favs.includes(a.id)) : albums), [favouritesOnly, favs]);
 
   // Load the featured record into the Shelf channel whenever it changes.
@@ -45,6 +54,7 @@ export default function App() {
       if (m === mode) return;
       if (m === 'dj') {
         engine.shelf.pause();
+        external.pause();
         // Pre-load sensible defaults the first time: picked record on A, next playable on B.
         if (engine.A.getState().status === 'EMPTY' && describeSource(album).kind === 'file') void engine.A.load(album);
         if (engine.B.getState().status === 'EMPTY') {
@@ -72,7 +82,16 @@ export default function App() {
     '--accent': album.spineColor,
   } as React.CSSProperties;
 
-  const shelfPlaying = shelfState.status === 'PLAYING' && shelfState.albumId === album.id;
+  const shelfPlaying =
+    sourceKind === 'file'
+      ? shelfState.status === 'PLAYING' && shelfState.albumId === album.id
+      : ext.albumId === album.id && (ext.status === 'PLAYING' || ext.buffering);
+  const liveDemoEnabled =
+    mode === 'dj'
+      ? describeSource(album).kind === 'file'
+      : sourceKind === 'file'
+        ? shelfState.albumId === album.id && engine.shelf.canPlay
+        : (sourceKind === 'youtube' || sourceKind === 'soundcloud') && ext.albumId === album.id && external.canControl;
 
   return (
     <div className="page" style={style}>
@@ -99,6 +118,8 @@ export default function App() {
                 onFav={() => toggle(album.id)}
                 onPrev={() => step(-1)}
                 onNext={() => step(1)}
+                sourceKind={sourceKind}
+                onSourceKind={(kind) => setSourcePref({ albumId: album.id, kind })}
               />
             ) : (
               <DJMode pickedId={album.id} />
@@ -121,9 +142,15 @@ export default function App() {
           favourites={albums.filter((a) => favs.includes(a.id))}
           onSelect={setSelectedId}
           liveDemoLabel={shelfPlaying ? 'lift the needle' : 'drop the needle'}
+          liveDemoEnabled={liveDemoEnabled}
+          sourceKind={mode === 'dj' ? describeSource(album).kind : sourceKind}
           onLiveDemo={() => {
-            if (mode !== 'shelf') changeMode('shelf');
-            engine.shelf.toggle();
+            if (mode !== 'shelf') {
+              changeMode('shelf');
+              setSourcePref({ albumId: album.id, kind: 'file' });
+              engine.shelf.play();
+            } else if (sourceKind === 'file') engine.shelf.toggle();
+            else external.toggle();
             document.getElementById('stage')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }}
         />

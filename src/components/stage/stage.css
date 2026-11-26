@@ -340,6 +340,9 @@
 }
 .player__badge--file { background: #e6fff4; color: #1d6b4c; border-color: #a6e9cb; }
 .player__badge--spotify { background: #e9fbe9; color: #17632d; }
+.player__badge--youtube { background: #ffecec; color: #a11a1a; border-color: #ffc9c9; }
+.player__badge--soundcloud { background: #fff1e6; color: #a34800; border-color: #ffd3b0; }
+.player__badge--apple { background: #fdeef3; color: #a3184a; border-color: #f9c5d7; }
 .player__badge--none { background: #fff2f8; color: #a3245f; border-color: #ffc4e1; }
 .player__controls {
   display: flex;
@@ -390,9 +393,64 @@
   font-size: 11px;
   color: var(--sv-plum);
 }
-.player__spotify iframe {
+/* ───────────── source tabs + third-party embeds ───────────── */
+.source-tabs {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.source-tab {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 99px;
+  border: 1.5px solid rgb(52 36 61 / 0.14);
+  background: rgb(255 255 255 / 0.75);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sv-ink);
+}
+.source-tab[aria-checked='true'] {
+  background: var(--sv-ink);
+  border-color: var(--sv-ink);
+  color: var(--sv-cream);
+}
+.embed {
+  position: relative;
+  display: block;
+  width: 100%;
   border: 0;
-  border-radius: 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgb(52 36 61 / 0.08);
+}
+.embed--youtube {
+  height: 200px; /* YouTube API terms: player ≥ 200×200 */
+}
+.embed--youtube iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.embed--soundcloud {
+  height: 166px;
+}
+.embed--placeholder {
+  animation: blink-soft 1.2s ease-in-out infinite;
+}
+@keyframes blink-soft {
+  50% { opacity: 0.5; }
+}
+.embed--spotify {
+  height: 152px;
+}
+.embed--apple {
+  height: 175px;
+  background: transparent;
+}
+.player__controls--slim {
+  gap: 10px;
 }
 .player__link {
   justify-self: center;
@@ -495,4 +553,5 @@
   .picked-sticker { animation: none; }
   .vinyl__disc { animation: none; }
   .stage-sticker__svg { animation: none; }
+  .embed--placeholder { animation: none; }
 }

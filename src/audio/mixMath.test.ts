@@ -40,3 +40,24 @@ describe('readableInk', () => {
     for (const a of albums) expect(contrastRatio(a.themeColor, readableInk(a.themeColor))).toBeGreaterThan(4.5);
   });
 });
+
+import { parseAppleMusicUrl, parseSoundCloudUrl, parseYouTubeId } from './adapters';
+
+describe('source URL parsing', () => {
+  it('parses YouTube links', () => {
+    expect(parseYouTubeId('https://www.youtube.com/watch?v=jNQXAC9IVRw&t=3')).toBe('jNQXAC9IVRw');
+    expect(parseYouTubeId('https://youtu.be/jNQXAC9IVRw')).toBe('jNQXAC9IVRw');
+    expect(parseYouTubeId('https://youtube.com/shorts/jNQXAC9IVRw')).toBe('jNQXAC9IVRw');
+    expect(parseYouTubeId('jNQXAC9IVRw')).toBe('jNQXAC9IVRw');
+    expect(parseYouTubeId('https://evil.com/watch?v=jNQXAC9IVRw')).toBeNull();
+  });
+  it('parses SoundCloud links', () => {
+    expect(parseSoundCloudUrl('https://soundcloud.com/forss/flickermood')).toBe('https://soundcloud.com/forss/flickermood');
+    expect(parseSoundCloudUrl('https://soundcloud.com/forss')).toBeNull();
+    expect(parseSoundCloudUrl('http://soundcloud.com/a/b')).toBeNull();
+  });
+  it('converts Apple Music links to embeds', () => {
+    expect(parseAppleMusicUrl('https://music.apple.com/us/album/x/123')?.embedUrl).toBe('https://embed.music.apple.com/us/album/x/123');
+    expect(parseAppleMusicUrl('https://example.com/us/album/x/123')).toBeNull();
+  });
+});

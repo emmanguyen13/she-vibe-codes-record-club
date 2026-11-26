@@ -1,6 +1,6 @@
 import type { Album, Mode } from '../../types';
 import { siteConfig } from '../../config';
-import { describeSource } from '../../audio/adapters';
+import type { SourceKind } from '../../audio/adapters';
 import { CoverArt } from '../stage/CoverArt';
 import { Icon } from '../ui/Icon';
 import './layout.css';
@@ -12,10 +12,12 @@ type Props = {
   onSelect: (id: string) => void;
   onLiveDemo: () => void;
   liveDemoLabel: string;
+  liveDemoEnabled: boolean;
+  sourceKind: SourceKind;
 };
 
-export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLabel }: Props) {
-  const playable = describeSource(album).kind === 'file';
+export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLabel, liveDemoEnabled, sourceKind: kind }: Props) {
+  const playable = liveDemoEnabled;
   return (
     <aside className="info" aria-label="About this project">
       <section className="info-card info-card--hero">
@@ -32,7 +34,7 @@ export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLab
         <p className="info__desc">{siteConfig.description}</p>
         <button type="button" className="pill-btn pill-btn--ink info__cta" onClick={onLiveDemo} disabled={!playable}>
           <Icon name="play" /> Live demo
-          <span className="info__cta-sub">{playable ? liveDemoLabel : 'pick a record with a preview'}</span>
+          <span className="info__cta-sub">{playable ? liveDemoLabel : kind === 'none' ? 'pick a record with a preview' : kind === 'spotify' || kind === 'apple' ? 'use the embedded player' : 'loading…'}</span>
         </button>
         <p className="info__credit">
           <span className="info__avatar" aria-hidden="true">✦</span>
@@ -46,7 +48,9 @@ export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLab
           <li><span aria-hidden="true">✓</span> Original loops synthesised for this project — real audio, no samples.</li>
           <li><span aria-hidden="true">✓</span> Spinning vinyl, tonearm and meters follow the actual playback state.</li>
           <li><span aria-hidden="true">✓</span> DJ Mode: two independent decks, 3-band EQ, volume, crossfader, pitch & BPM sync via Web Audio.</li>
-          <li className="is-muted"><span aria-hidden="true">○</span> Spotify: official embed only, when configured. Its audio can’t be mixed.</li>
+          <li><span aria-hidden="true">✓</span> YouTube & SoundCloud via their official player APIs — our play button and the vinyl follow their real state.</li>
+          <li className="is-muted"><span aria-hidden="true">○</span> Spotify & Apple Music: official embedded players, controlled inside their own iframe.</li>
+          <li className="is-muted"><span aria-hidden="true">○</span> Streaming-service audio can’t be mixed — DJ Mode uses licensed audio files only.</li>
           <li className="is-muted"><span aria-hidden="true">○</span> Headphone cue isn’t possible in browsers, so CUE sets a cue point.</li>
         </ul>
       </section>

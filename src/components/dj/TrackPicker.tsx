@@ -54,7 +54,7 @@ export function TrackPicker({ target, albums, pickedId, onPick, onClose }: Props
                     <span>{a.artist}{a.bpm ? ` · ${a.bpm} BPM` : ''}</span>
                   </span>
                   {a.id === pickedId && <span className="picker__tag picker__tag--picked">picked</span>}
-                  <span className={`picker__tag picker__tag--${src.kind}`}>{src.kind === 'file' ? 'mixable' : src.kind === 'spotify' ? 'Spotify only' : 'no preview'}</span>
+                  <span className={`picker__tag picker__tag--${src.kind === 'file' || src.kind === 'none' ? src.kind : 'stream'}`}>{src.kind === 'file' ? 'mixable' : src.kind === 'none' ? 'no preview' : `${src.label} only`}</span>
                 </button>
               </li>
             );

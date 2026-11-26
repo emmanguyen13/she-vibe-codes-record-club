@@ -33,6 +33,12 @@ export type Album = {
   spotifyEmbedUrl?: string;
   /** Audio the project owner is authorised to stream & process in-browser. */
   previewAudioUrl?: string;
+  /** YouTube watch / youtu.be / shorts URL, or an 11-character video ID. */
+  youtubeUrl?: string;
+  /** Public SoundCloud track or playlist URL, e.g. https://soundcloud.com/artist/track */
+  soundcloudUrl?: string;
+  /** Apple Music album/song/playlist URL (music.apple.com or embed.music.apple.com). */
+  appleMusicUrl?: string;
 };
 
 export type Mode = 'shelf' | 'dj';

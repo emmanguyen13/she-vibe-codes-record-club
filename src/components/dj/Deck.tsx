@@ -103,7 +103,14 @@ export function Deck({ id, channel, other, onLoad }: Props) {
         </p>
       </div>
 
-      <ProgressBar channel={channel} status={st.status} duration={st.duration} label={`Deck ${id} position`} />
+      <ProgressBar
+        getPosition={() => channel.position()}
+        onSeek={(t) => channel.seek(t)}
+        playing={playing}
+        duration={st.duration}
+        enabled={ready}
+        label={`Deck ${id} position`}
+      />
 
       <div className="deck__transport">
         <button type="button" className="deck-btn deck-btn--cue" onClick={() => channel.cue()} disabled={!ready} title="While playing: jump back to the cue point. Stopped: set the cue point here." aria-label={`Deck ${id} cue`}>

@@ -1,6 +1,8 @@
 import type { Album } from '../../types';
 import { engine } from '../../audio/engine';
 import { useChannel } from '../../audio/useChannel';
+import { useExternal } from '../../audio/external/useExternal';
+import type { SourceKind } from '../../audio/adapters';
 import { AlbumSleeve } from './AlbumSleeve';
 import { VinylRecord } from './VinylRecord';
 import { Tonearm } from './Tonearm';
@@ -8,11 +10,23 @@ import { PlaybackControls } from './PlaybackControls';
 import { StageSticker } from './StageSticker';
 import './stage.css';
 
-type Props = { album: Album; isFav: boolean; onFav: () => void; onPrev: () => void; onNext: () => void };
+type Props = {
+  album: Album;
+  isFav: boolean;
+  onFav: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  sourceKind: SourceKind;
+  onSourceKind: (k: SourceKind) => void;
+};
 
-export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext }: Props) {
+export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind }: Props) {
   const ch = useChannel(engine.shelf);
-  const playing = ch.status === 'PLAYING' && ch.albumId === album.id;
+  const ext = useExternal();
+  // Vinyl spins & tonearm drops only on a real "playing" report from the active player.
+  const playing =
+    (sourceKind === 'file' && ch.status === 'PLAYING' && ch.albumId === album.id) ||
+    (ext.status === 'PLAYING' && ext.albumId === album.id && ext.kind === sourceKind);
   const meta = [album.year, album.format, album.genre, album.bpm ? `${album.bpm} BPM` : null].filter(Boolean);
 
   return (
@@ -37,7 +51,16 @@ export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext }: Pro
         {album.label && <p className="featured__label">{album.label}</p>}
       </div>
       <div className="featured__player">
-        <PlaybackControls album={album} isFav={isFav} onFav={onFav} onPrev={onPrev} onNext={onNext} />
+        <PlaybackControls
+          key={album.id}
+          album={album}
+          isFav={isFav}
+          onFav={onFav}
+          onPrev={onPrev}
+          onNext={onNext}
+          sourceKind={sourceKind}
+          onSourceKind={onSourceKind}
+        />
       </div>
     </div>
   );

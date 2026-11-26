@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { detectLink } from '../../audio/adapters';
 import { catalogue, SWATCHES } from '../../data/catalogue';
+import { wall, type WallStatus } from '../../data/wall';
 import { Icon } from '../ui/Icon';
 import './shelf.css';
 
-type Props = { open: boolean; onClose: () => void; onAdded: (id: string) => void };
+type Where = 'wall' | 'mine';
+type Props = { open: boolean; wallStatus: WallStatus; onClose: () => void; onAdded: (id: string, where: Where) => void };
 
 const SERVICES = ['Spotify', 'Apple Music', 'YouTube', 'SoundCloud'];
 
@@ -13,7 +15,7 @@ const SERVICES = ['Spotify', 'Apple Music', 'YouTube', 'SoundCloud'];
  * only ever played through the service's official embed, and the record is
  * saved in this browser (localStorage) — nothing is uploaded anywhere.
  */
-export function AddRecordDialog({ open, onClose, onAdded }: Props) {
+export function AddRecordDialog({ open, wallStatus, onClose, onAdded }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const linkInput = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState('');
@@ -21,7 +23,12 @@ export function AddRecordDialog({ open, onClose, onAdded }: Props) {
   const [swatch, setSwatch] = useState(0);
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const ids = { link: useId(), title: useId(), hint: useId() };
+  const [handle, setHandle] = useState('');
+  const [busy, setBusy] = useState(false);
+  const wallOn = wallStatus === 'ready';
+  const [where, setWhere] = useState<Where>('wall');
+  const target: Where = wallOn ? where : 'mine';
+  const ids = { link: useId(), title: useId(), hint: useId(), handle: useId() };
 
   useEffect(() => {
     const d = ref.current;
@@ -31,6 +38,7 @@ export function AddRecordDialog({ open, onClose, onAdded }: Props) {
       setTitle('');
       setTouched(false);
       setError(null);
+      setBusy(false);
       d.showModal();
       // showModal() focuses the first button; move focus to the link field instead
       requestAnimationFrame(() => linkInput.current?.focus());
@@ -41,12 +49,21 @@ export function AddRecordDialog({ open, onClose, onAdded }: Props) {
   const detected = detectLink(link);
   const showStatus = touched || link.length > 8;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
+    if (!detected.ok || busy) return;
+    if (target === 'wall') {
+      setBusy(true);
+      const res = await wall.post({ link, title, handle, swatch });
+      setBusy(false);
+      if ('error' in res) setError(res.error);
+      else onAdded(res.id, 'wall');
+      return;
+    }
     const res = catalogue.add(link, title, swatch);
     if ('error' in res) setError(res.error);
-    else onAdded(res.id);
+    else onAdded(res.id, 'mine');
   };
 
   return (
@@ -63,7 +80,7 @@ export function AddRecordDialog({ open, onClose, onAdded }: Props) {
         <header className="addrec__head">
           <div>
             <p className="pixel addrec__eyebrow">Your mixtape</p>
-            <h2 id="addrec-title">Put your playlist on the shelf</h2>
+            <h2 id="addrec-title">Share your playlist</h2>
           </div>
           <button type="button" className="pill-btn pill-btn--icon" onClick={onClose} aria-label="Close">
             <Icon name="close" />
@@ -108,6 +125,45 @@ export function AddRecordDialog({ open, onClose, onAdded }: Props) {
           onChange={(e) => setTitle(e.target.value)}
         />
 
+        <fieldset className="addrec__where">
+          <legend className="addrec__label">Where should it go?</legend>
+          <label className={`addrec__choice ${target === 'wall' ? 'is-on' : ''} ${wallOn ? '' : 'is-disabled'}`}>
+            <input type="radio" name="where" value="wall" checked={target === 'wall'} disabled={!wallOn} onChange={() => setWhere('wall')} />
+            <span>
+              <strong>Community wall</strong>
+              <small>{wallOn ? 'Everyone visiting can see & play it' : 'Not connected right now'}</small>
+            </span>
+          </label>
+          <label className={`addrec__choice ${target === 'mine' ? 'is-on' : ''}`}>
+            <input type="radio" name="where" value="mine" checked={target === 'mine'} onChange={() => setWhere('mine')} />
+            <span>
+              <strong>Just my shelf</strong>
+              <small>Saved only in this browser</small>
+            </span>
+          </label>
+        </fieldset>
+
+        {target === 'wall' && (
+          <>
+            <label className="addrec__label" htmlFor={ids.handle}>Your Threads handle <span>(optional)</span></label>
+            <div className="addrec__handle">
+              <span aria-hidden="true">@</span>
+              <input
+                id={ids.handle}
+                className="addrec__input"
+                type="text"
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                maxLength={40}
+                placeholder="your.handle"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
         <fieldset className="addrec__swatches">
           <legend className="addrec__label">Spine colour</legend>
           {SWATCHES.map((s, i) => (
@@ -122,12 +178,14 @@ export function AddRecordDialog({ open, onClose, onAdded }: Props) {
         {error && <p className="addrec__error" role="alert">{error}</p>}
 
         <p className="addrec__fine">
-          Saved only in this browser, on this device. Full tracks may need you to be signed in to that service.
+          {target === 'wall'
+            ? 'Posted publicly with the name and handle you give. Be kind — moderators can remove posts. Full tracks may need a sign-in to that service.'
+            : 'Saved only in this browser, on this device. Full tracks may need you to be signed in to that service.'}
         </p>
         <div className="addrec__actions">
           <button type="button" className="pill-btn" onClick={onClose}>Cancel</button>
-          <button type="submit" className="pill-btn pill-btn--primary" disabled={!detected.ok}>
-            <Icon name="plus" /> Add to shelf
+          <button type="submit" className="pill-btn pill-btn--primary" disabled={!detected.ok || busy}>
+            <Icon name="plus" /> {busy ? 'Pinning…' : target === 'wall' ? 'Pin to the wall' : 'Add to my shelf'}
           </button>
         </div>
       </form>

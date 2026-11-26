@@ -21,24 +21,37 @@ export const SWATCHES = [
 
 const PATTERNS: CoverPattern[] = ['hearts', 'stars', 'bubbles', 'flower', 'rings', 'waves', 'butterfly', 'checker'];
 
-type Stored = { id: string; title: string; link: string; swatch: number; pattern: CoverPattern; added: number };
-
-function toAlbum(r: Stored): Album | null {
+/** Builds a shelf record that plays a pasted link through the official player. */
+export function linkRecord(r: {
+  id: string; title: string; link: string; swatch: number; pattern: CoverPattern; artist: string; format: string; stamp: string;
+}): Album | null {
   const d = detectLink(r.link);
   if (!d.ok) return null;
   const sw = SWATCHES[r.swatch] ?? SWATCHES[0];
   return {
     id: r.id,
-    userAdded: true,
-    artist: 'Added by you',
+    artist: r.artist,
     title: r.title,
     genre: d.what,
-    format: 'Your link',
-    art: { pattern: r.pattern, colors: [...sw.art] as [string, string, string], stamp: 'mine' },
+    format: r.format,
+    art: { pattern: r.pattern, colors: [...sw.art] as [string, string, string], stamp: r.stamp },
     spineColor: sw.spine,
     themeColor: sw.theme,
     ...d.fields,
   };
+}
+
+export const patternFor = (seed: string): CoverPattern => {
+  let h = 0;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PATTERNS[h % PATTERNS.length];
+};
+
+type Stored = { id: string; title: string; link: string; swatch: number; pattern: CoverPattern; added: number };
+
+function toAlbum(r: Stored): Album | null {
+  const a = linkRecord({ ...r, artist: 'Added by you', format: 'Your link', stamp: 'mine' });
+  return a && { ...a, userAdded: true };
 }
 
 function read(): Stored[] {
@@ -72,13 +85,19 @@ function commit(next: Stored[]) {
   listeners.forEach((l) => l());
 }
 
+// The community wall registers itself here so decks & lookups can find its records.
+let extraFind: (id: string | null | undefined) => Album | undefined = () => undefined;
+export function registerExtraLookup(fn: typeof extraFind) {
+  extraFind = fn;
+}
+
 export const catalogue = {
   subscribe(fn: () => void) {
     listeners.add(fn);
     return () => listeners.delete(fn);
   },
   getAll: () => snapshot,
-  find: (id: string | null | undefined) => snapshot.find((a) => a.id === id),
+  find: (id: string | null | undefined) => snapshot.find((a) => a.id === id) ?? extraFind(id),
   get full() {
     return stored.length >= MAX;
   },

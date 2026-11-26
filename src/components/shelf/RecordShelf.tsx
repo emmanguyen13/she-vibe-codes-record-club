@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { Album } from '../../types';
 import { RecordSpine } from './RecordSpine';
+import type { ShelfView } from './ShelfTabs';
+import type { WallStatus } from '../../data/wall';
 import './shelf.css';
 
 type Props = {
@@ -8,7 +10,9 @@ type Props = {
   selectedId: string;
   isFav: (id: string) => boolean;
   onSelect: (id: string) => void;
-  favouritesOnly: boolean;
+  view: ShelfView;
+  wallStatus: WallStatus;
+  wallMessage: string | null;
   onClearFilter: () => void;
   onAdd: () => void;
 };
@@ -17,7 +21,7 @@ type Props = {
  * Horizontal, scrollable shelf. Implements the WAI-ARIA listbox pattern with
  * roving tabindex: ←/→ (and ↑/↓) move + select, Home/End jump.
  */
-export function RecordShelf({ albums, selectedId, isFav, onSelect, favouritesOnly, onClearFilter, onAdd }: Props) {
+export function RecordShelf({ albums, selectedId, isFav, onSelect, view, wallStatus, wallMessage, onClearFilter, onAdd }: Props) {
   const refs = useRef(new Map<string, HTMLButtonElement>());
   const listRef = useRef<HTMLDivElement>(null);
   const selectedIndex = albums.findIndex((a) => a.id === selectedId);
@@ -42,23 +46,36 @@ export function RecordShelf({ albums, selectedId, isFav, onSelect, favouritesOnl
   };
 
   if (!albums.length) {
+    let msg: string;
+    let action: { label: string; run: () => void } | null = { label: 'Back to our shelf', run: onClearFilter };
+    if (view === 'favs') msg = 'No hearts yet ♡ — tap the heart on a record you love and it’ll live here.';
+    else if (view === 'mine') {
+      msg = 'Nothing here yet — paste a playlist link and it becomes a record on your shelf.';
+      action = { label: '+ Add your playlist', run: onAdd };
+    } else if (wallStatus === 'loading' || wallStatus === 'idle') {
+      msg = 'Dusting off the community wall…';
+      action = null;
+    } else if (wallStatus === 'offline' || wallStatus === 'error') {
+      msg = wallMessage ?? 'The community wall is unavailable right now.';
+    } else {
+      msg = 'The wall is empty — be the first to pin a playlist ✦';
+      action = { label: '+ Share your playlist', run: onAdd };
+    }
     return (
-      <div className="shelf shelf--empty">
-        <p>
-          No hearts yet ♡ — tap the heart on a record you love and it’ll live here.
-        </p>
-        <button type="button" className="pill-btn" onClick={onClearFilter}>Show the whole shelf</button>
+      <div className="shelf shelf--empty" id="shelf-panel" role="tabpanel" aria-labelledby={`shelf-tab-${view}`}>
+        <p role="status">{msg}</p>
+        {action && <button type="button" className="pill-btn" onClick={action.run}>{action.label}</button>}
       </div>
     );
   }
 
   return (
-    <div className="shelf">
+    <div className="shelf" id="shelf-panel" role="tabpanel" aria-labelledby={`shelf-tab-${view}`}>
       <div
         ref={listRef}
         className="shelf__row"
         role="listbox"
-        aria-label={favouritesOnly ? 'Favourite records' : 'Record shelf'}
+        aria-label={view === 'wall' ? 'Community wall records' : view === 'favs' ? 'Favourite records' : view === 'mine' ? 'My records' : 'Record shelf'}
         aria-orientation="horizontal"
         onKeyDown={(e) => {
           const keys: Record<string, number> = {

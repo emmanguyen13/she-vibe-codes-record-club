@@ -31,7 +31,7 @@
   position: relative;
   flex: none;
   width: var(--w);
-  height: clamp(150px, 21vh, 220px);
+  height: clamp(140px, 19vh, 210px);
   padding: 10px 0 34px;
   border: 0;
   border-radius: 8px 8px 3px 3px;
@@ -269,6 +269,8 @@
 /* ───────────── add-record dialog ───────────── */
 .addrec {
   width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
   padding: 0;
   border: 2px solid #fff;
   border-radius: var(--radius-lg);
@@ -400,9 +402,128 @@
 }
 
 @container stage (max-width: 580px) {
-  .shelf__add {
-    width: 92px;
-    height: 150px;
-    margin-right: 8px;
+  .shelf {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'row' 'add' 'plank';
   }
+  .shelf__add {
+    display: flex;
+    gap: 10px;
+    width: auto;
+    height: 48px;
+    margin: 10px 10px 4px;
+    padding: 0 16px;
+    border-radius: 99px;
+  }
+  .shelf__add-plus {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+  .shelf-tabs {
+    margin-inline: 8px;
+  }
+}
+
+/* ───────────── shelf tabs ───────────── */
+.shelf-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 14px -8px;
+  padding: 0 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: relative;
+  z-index: 3;
+}
+.shelf-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1.5px solid rgb(255 255 255 / 0.9);
+  border-radius: 14px 14px 0 0;
+  background: rgb(255 255 255 / 0.5);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sv-ink);
+}
+.shelf-tab[aria-selected='true'] {
+  background: rgb(255 249 245 / 0.95);
+  color: var(--sv-hot-pink-ink);
+}
+.shelf-tab__count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: rgb(52 36 61 / 0.08);
+  font-size: 11px;
+  text-align: center;
+}
+.spine__mine--wall {
+  background: var(--sv-ink);
+  color: var(--sv-cream);
+}
+
+.addrec__where {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+}
+.addrec__where legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+.addrec__choice {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 2px solid rgb(52 36 61 / 0.12);
+  background: #fff;
+  cursor: pointer;
+}
+.addrec__choice.is-on {
+  border-color: var(--sv-hot-pink);
+  background: #fff3f9;
+}
+.addrec__choice.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.addrec__choice input {
+  margin-top: 3px;
+  accent-color: var(--sv-hot-pink);
+}
+.addrec__choice strong {
+  display: block;
+  font-size: 13.5px;
+}
+.addrec__choice small {
+  font-size: 11.5px;
+  color: var(--sv-plum);
+}
+.addrec__handle {
+  position: relative;
+}
+.addrec__handle > span {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  translate: 0 -50%;
+  font-weight: 700;
+  color: var(--sv-plum);
+}
+.addrec__handle .addrec__input {
+  padding-left: 32px;
+}
+@media (max-width: 420px) {
+  .addrec__where { grid-template-columns: 1fr; }
 }

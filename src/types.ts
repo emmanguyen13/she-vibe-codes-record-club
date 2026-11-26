@@ -13,6 +13,10 @@ export type Album = {
   id: string;
   /** Added by the visitor from a pasted link (saved on their device only). */
   userAdded?: boolean;
+  /** Present when this record comes from the shared community wall. */
+  wallId?: string;
+  /** Threads handle of the community member who shared it (no "@"). */
+  sharedBy?: string | null;
   artist: string;
   title: string;
   year?: string;

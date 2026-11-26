@@ -24,6 +24,8 @@ type Props = {
   onSourceKind: (k: SourceKind) => void;
   /** Only for visitor-added records. */
   onRemove?: () => void;
+  /** Community wall moderators only. */
+  onModeratorRemove?: () => void;
 };
 
 const statusCopy: Record<string, string> = {
@@ -36,7 +38,7 @@ const statusCopy: Record<string, string> = {
 };
 
 /** Compact, translucent "portable player" widget for Shelf Mode. */
-export function PlaybackControls({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind, onRemove }: Props) {
+export function PlaybackControls({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind, onRemove, onModeratorRemove }: Props) {
   const sources = availableSources(album);
   const source: PlaybackSource | undefined = sources.find((s) => s.kind === sourceKind) ?? sources[0];
   const ch = useChannel(engine.shelf);
@@ -181,6 +183,17 @@ export function PlaybackControls({ album, isFav, onFav, onPrev, onNext, sourceKi
       {onRemove && (
         <button type="button" className="player__remove" onClick={onRemove}>
           <Icon name="close" className="icon icon--xs" /> Remove from my shelf
+        </button>
+      )}
+      {onModeratorRemove && (
+        <button
+          type="button"
+          className="player__remove player__remove--mod"
+          onClick={() => {
+            if (window.confirm(`Remove “${album.title}” from the community wall for everyone?`)) onModeratorRemove();
+          }}
+        >
+          <Icon name="close" className="icon icon--xs" /> Remove from wall (moderator)
         </button>
       )}
     </section>

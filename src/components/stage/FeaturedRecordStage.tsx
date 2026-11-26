@@ -19,9 +19,10 @@ type Props = {
   sourceKind: SourceKind;
   onSourceKind: (k: SourceKind) => void;
   onRemove?: () => void;
+  onModeratorRemove?: () => void;
 };
 
-export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind, onRemove }: Props) {
+export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind, onRemove, onModeratorRemove }: Props) {
   const ch = useChannel(engine.shelf);
   const ext = useExternal();
   // Vinyl spins & tonearm drops only on a real "playing" report from the active player.
@@ -50,6 +51,14 @@ export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourc
         <h2 className="featured__title">{album.title}</h2>
         <p className="featured__info">{meta.join(' · ')}</p>
         {album.label && <p className="featured__label">{album.label}</p>}
+        {album.sharedBy && (
+          <p className="featured__label">
+            Shared on the wall by{' '}
+            <a className="featured__credit" href={`https://www.threads.com/@${album.sharedBy}`} target="_blank" rel="noreferrer noopener">
+              @{album.sharedBy} on Threads
+            </a>
+          </p>
+        )}
       </div>
       <div className="featured__player">
         <PlaybackControls
@@ -62,6 +71,7 @@ export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourc
           sourceKind={sourceKind}
           onSourceKind={onSourceKind}
           onRemove={onRemove}
+          onModeratorRemove={onModeratorRemove}
         />
       </div>
     </div>

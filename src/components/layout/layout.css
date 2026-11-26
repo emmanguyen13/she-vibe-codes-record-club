@@ -455,7 +455,12 @@
   line-height: 1.5;
   color: #4a3752;
 }
-.info__byo-btn {
-  width: 100%;
+.info__byo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 14px;
+}
+.info__byo-actions .pill-btn {
+  flex: 1 1 auto;
 }

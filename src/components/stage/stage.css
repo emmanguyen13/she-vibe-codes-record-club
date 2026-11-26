@@ -8,7 +8,7 @@
     'meta deck player';
   align-items: end;
   gap: 8px 24px;
-  padding: 4px 28px 26px;
+  padding: 2px 28px 16px;
   min-height: 0;
   flex: 1;
 }
@@ -38,6 +38,8 @@
   line-height: 0.98;
   letter-spacing: -0.01em;
   text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .featured__info {
   margin-top: 10px;
@@ -572,4 +574,13 @@
 }
 .player__remove:hover {
   background: rgb(52 36 61 / 0.07);
+}
+
+.player__remove--mod {
+  color: #a3245f;
+}
+.featured__credit {
+  color: inherit;
+  font-weight: 700;
+  text-underline-offset: 2px;
 }

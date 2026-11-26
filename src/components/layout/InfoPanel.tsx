@@ -1,6 +1,7 @@
 import type { Album, Mode } from '../../types';
 import { siteConfig } from '../../config';
 import type { SourceKind } from '../../audio/adapters';
+import type { WallStatus } from '../../data/wall';
 import { CoverArt } from '../stage/CoverArt';
 import { Icon } from '../ui/Icon';
 import './layout.css';
@@ -14,11 +15,13 @@ type Props = {
   liveDemoLabel: string;
   liveDemoEnabled: boolean;
   sourceKind: SourceKind;
-  myRecords: Album[];
+  wallStatus: WallStatus;
+  wallRecords: Album[];
+  onBrowseWall: () => void;
   onAdd: () => void;
 };
 
-export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLabel, liveDemoEnabled, sourceKind: kind, myRecords, onAdd }: Props) {
+export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLabel, liveDemoEnabled, sourceKind: kind, wallStatus, wallRecords, onBrowseWall, onAdd }: Props) {
   const playable = liveDemoEnabled;
   return (
     <aside className="info" aria-label="About this project">
@@ -45,30 +48,39 @@ export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLab
       </section>
 
       <section className="info-card info-card--byo" aria-labelledby="byo-h">
+        <p className="info__eyebrow pixel">Threads community</p>
         <h2 id="byo-h" className="info__h2">
-          Bring your playlist <span className="info__count">{myRecords.length}</span>
+          Playlist wall {wallStatus === 'ready' && <span className="info__count">{wallRecords.length}</span>}
         </h2>
         <p className="info__byo-text">
-          Paste a playlist, album or track link from Spotify, Apple Music, YouTube or SoundCloud and it becomes a record on your shelf.
+          Pin the playlist you code to. Paste a Spotify, Apple Music, YouTube or SoundCloud link, add your Threads handle, and it joins the shared wall for everyone.
         </p>
-        {myRecords.length > 0 && (
+        {wallStatus === 'ready' && wallRecords.length > 0 && (
           <ul className="favs">
-            {myRecords.map((a) => (
+            {wallRecords.slice(0, 4).map((a) => (
               <li key={a.id}>
                 <button type="button" className="favs__item" onClick={() => onSelect(a.id)} aria-current={a.id === album.id || undefined}>
                   <CoverArt album={a} showText={false} className="favs__thumb" />
                   <span>
                     <strong>{a.title}</strong>
-                    <small>{a.genre}</small>
+                    <small>{a.sharedBy ? `@${a.sharedBy}` : 'Community'} · {a.genre}</small>
                   </span>
                 </button>
               </li>
             ))}
           </ul>
         )}
-        <button type="button" className="pill-btn pill-btn--primary info__byo-btn" onClick={onAdd}>
-          <Icon name="plus" /> Add your playlist
-        </button>
+        {(wallStatus === 'offline' || wallStatus === 'error') && (
+          <p className="info__empty">The shared wall isn’t connected right now. You can still add playlists to your own shelf.</p>
+        )}
+        <div className="info__byo-actions">
+          <button type="button" className="pill-btn pill-btn--primary" onClick={onAdd}>
+            <Icon name="plus" /> Share a playlist
+          </button>
+          {wallStatus === 'ready' && (
+            <button type="button" className="pill-btn" onClick={onBrowseWall}>Browse the wall</button>
+          )}
+        </div>
       </section>
 
       <section className="info-card" id="about-audio" aria-labelledby="audio-h">

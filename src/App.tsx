@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Mode } from './types';
 import { catalogue, useCatalogue } from './data/catalogue';
+import { wall, useWall } from './data/wall';
+import { ShelfTabs, type ShelfView } from './components/shelf/ShelfTabs';
 import { engine } from './audio/engine';
 import { availableSources, describeSource, type SourceKind } from './audio/adapters';
 import { external } from './audio/external/store';
@@ -23,19 +25,36 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(albums[0].id);
   const [adding, setAdding] = useState(false);
   const [mode, setMode] = useState<Mode>('shelf');
-  const [favouritesOnly, setFavouritesOnly] = useState(false);
+  const [view, setView] = useState<ShelfView>('all');
+  const wallState = useWall();
   const { favs, toggle, isFav } = useFavourites();
   const shelfState = useChannel(engine.shelf);
   const ext = useExternal();
   const [sourcePref, setSourcePref] = useState<{ albumId: string; kind: SourceKind } | null>(null);
 
-  const album = albums.find((a) => a.id === selectedId) ?? albums[0];
+  const everything = useMemo(() => [...albums, ...wallState.albums], [albums, wallState.albums]);
+  const album = everything.find((a) => a.id === selectedId) ?? albums[0];
+
+  // Load the community wall once; `#moderate` lets a moderator enter their token.
+  useEffect(() => {
+    void wall.load();
+    if (window.location.hash === '#moderate') {
+      const token = window.prompt('Moderator token for the community wall:');
+      if (token) wall.setAdminToken(token.trim());
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
   const sources = availableSources(album);
   const sourceKind: SourceKind =
     sourcePref?.albumId === album.id && sources.some((s) => s.kind === sourcePref.kind)
       ? sourcePref.kind
       : describeSource(album).kind;
-  const visible = useMemo(() => (favouritesOnly ? albums.filter((a) => favs.includes(a.id)) : albums), [favouritesOnly, favs, albums]);
+  const visible = useMemo(() => {
+    if (view === 'wall') return wallState.albums;
+    if (view === 'mine') return albums.filter((a) => a.userAdded);
+    if (view === 'favs') return everything.filter((a) => favs.includes(a.id));
+    return albums;
+  }, [view, favs, albums, everything, wallState.albums]);
 
   // Load the featured record into the Shelf channel whenever it changes.
   useEffect(() => {
@@ -113,8 +132,8 @@ export default function App() {
           <Header
             mode={mode}
             onMode={changeMode}
-            favouritesOnly={favouritesOnly}
-            onFavouritesOnly={setFavouritesOnly}
+            favouritesOnly={view === 'favs'}
+            onFavouritesOnly={(on) => setView(on ? 'favs' : 'all')}
             isFav={isFav(album.id)}
             onFav={() => toggle(album.id)}
             favLabel={`Favourite ${album.title}`}
@@ -133,18 +152,42 @@ export default function App() {
                 sourceKind={sourceKind}
                 onSourceKind={(kind) => setSourcePref({ albumId: album.id, kind })}
                 onRemove={album.userAdded ? () => removeRecord(album.id) : undefined}
+                onModeratorRemove={
+                  album.wallId && wall.adminToken
+                    ? async () => {
+                        const err = await wall.remove(album.wallId!);
+                        if (err) window.alert(err);
+                        else step(1);
+                      }
+                    : undefined
+                }
               />
             ) : (
               <DJMode pickedId={album.id} />
             )}
             <div id="shelf">
+              <ShelfTabs
+                view={view}
+                onView={(v) => {
+                  setView(v);
+                  if (v === 'wall') void wall.load();
+                }}
+                counts={{
+                  all: albums.length,
+                  wall: wallState.status === 'ready' ? wallState.albums.length : null,
+                  mine: albums.filter((a) => a.userAdded).length,
+                  favs: everything.filter((a) => favs.includes(a.id)).length,
+                }}
+              />
               <RecordShelf
                 albums={visible}
                 selectedId={selectedId}
                 isFav={isFav}
                 onSelect={setSelectedId}
-                favouritesOnly={favouritesOnly}
-                onClearFilter={() => setFavouritesOnly(false)}
+                view={view}
+                wallStatus={wallState.status}
+                wallMessage={wallState.message}
+                onClearFilter={() => setView('all')}
                 onAdd={() => setAdding(true)}
               />
             </div>
@@ -153,12 +196,18 @@ export default function App() {
         <InfoPanel
           album={album}
           mode={mode}
-          favourites={albums.filter((a) => favs.includes(a.id))}
+          favourites={everything.filter((a) => favs.includes(a.id))}
           onSelect={setSelectedId}
           liveDemoLabel={shelfPlaying ? 'lift the needle' : 'drop the needle'}
           liveDemoEnabled={liveDemoEnabled}
           sourceKind={mode === 'dj' ? describeSource(album).kind : sourceKind}
-          myRecords={albums.filter((a) => a.userAdded)}
+          wallStatus={wallState.status}
+          wallRecords={wallState.albums}
+          onBrowseWall={() => {
+            setView('wall');
+            void wall.load();
+            document.getElementById('shelf')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }}
           onAdd={() => setAdding(true)}
           onLiveDemo={() => {
             if (mode !== 'shelf') {
@@ -173,10 +222,11 @@ export default function App() {
       </main>
       <AddRecordDialog
         open={adding}
+        wallStatus={wallState.status}
         onClose={() => setAdding(false)}
-        onAdded={(id) => {
+        onAdded={(id, where) => {
           setAdding(false);
-          setFavouritesOnly(false);
+          setView(where === 'wall' ? 'wall' : 'mine');
           setSelectedId(id);
           if (mode !== 'shelf') changeMode('shelf');
         }}

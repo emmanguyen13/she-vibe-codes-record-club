@@ -125,7 +125,48 @@ There are two entry points: the **"+ Add your playlist"** button at the end of t
 - **Short share links** (`on.soundcloud.com`, `spotify.link`, `apple.co`) are rejected with a hint to open them and copy the full address. Anything else, such as Zing MP3, gets a friendly error.
 - **The new record:** it gets a name (optional), a spine colour and generated cover art. It appears on the shelf with a "mine" tag and opens straight away. Visitors can remove it with "Remove from my shelf" in the player.
 - **Storage:** records are saved in **that visitor's browser only** (`localStorage`, key `svc-record-club:my-records`, max 40). Nothing is uploaded, and other visitors can't see them. Links are re-validated on every load and only ever play through the services' official embeds.
-- **Shared shelves:** sharing a shelf between people (for example a community playlist wall) would need a backend or database. That isn't included.
+- **Shared shelves:** to share with everyone, members choose "Community wall" instead (see below).
+
+## Community playlist wall (shared, for the Threads community)
+
+The **Community wall** tab on the shelf and the **Playlist wall** card are shared by everyone who visits:
+- A member pastes a Spotify, Apple Music, YouTube or SoundCloud link, optionally adds a name and their **Threads handle**, and chooses **"Community wall"** in the dialog.
+- The record appears for everyone, credited "Shared on the wall by @handle on Threads", with a link to their Threads profile.
+
+### How it works
+- `api/wall.ts`: a Vercel Function (`GET` list · `POST` add · `DELETE` moderator remove).
+- `server/wall.ts`: the request handler, validation and storage adapters (unit-tested in `server/wall.test.ts`).
+- **Storage:** Upstash Redis, through its REST API. No SDK is needed, and the free tier is plenty.
+- **Validation:** every link is re-checked on the server with the same parser as the UI, so only official Spotify, Apple Music, YouTube and SoundCloud players can appear. Titles are plain text, at most 60 characters, with links and control characters stripped.
+- **Limits:**
+  - 6 posts per hour per visitor.
+  - 500 records on the wall.
+  - Duplicate links return the existing record.
+  - Visitor IPs are **never stored**: only a hashed counter that expires after an hour.
+- **Honest offline state:** if no database is connected, the API returns `503` and the UI says "The community wall isn't switched on yet". Members can still save to their own shelf.
+- **Threads handles are self-declared.** There's no Threads login, so anyone can type any handle. Treat it as a credit line, not an identity.
+
+### Switch it on (one time, about 5 minutes)
+1. Deploy the project on Vercel from the GitHub repo (see "Run it").
+2. In the Vercel dashboard, open the project and go to **Storage → Create Database → Upstash for Redis**. Pick the free plan and connect it to this project. Vercel adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically. `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` also work.
+3. Go to **Settings → Environment Variables**. Add `WALL_ADMIN_TOKEN` with a long random value: your moderator password. Keep it private.
+4. **Redeploy** so the new variables are picked up.
+
+### Moderating
+- Open `https://<your-site>/#moderate` and enter your `WALL_ADMIN_TOKEN`. It's kept only for that browser tab's session.
+- Wall records then show **"Remove from wall (moderator)"**. Removal is immediate for everyone.
+- To revoke moderator access, change the token in Vercel and redeploy.
+
+### Local development
+`npm run dev` serves `/api/wall` from the Vite dev server with an **in-memory** wall, which resets on restart. The moderator token is `dev-admin`.
+
+To test against the real database:
+
+```bash
+npx vercel env pull .env.local
+```
+
+Then export those variables before running `npm run dev`.
 
 ### Optional upgrades that need developer accounts
 - **Apple MusicKit JS:** lets our own controls drive Apple Music. You need an Apple Developer Program membership and a MusicKit key, plus a small backend to sign the developer token (never ship the private key to the browser).
@@ -187,6 +228,7 @@ src/
     engine.ts                 Web Audio engine: shelf + deck A/B channels, master
     adapters.ts               source abstraction: file | youtube | soundcloud | spotify | apple | none
     external/                 YouTube & SoundCloud controller store, script loader, API typings
+  data/wall.ts                community wall client (fetch, post, moderate)
     mixMath.ts (+ .test.ts)   crossfade curve, sync rate, beat-phase alignment
     useChannel.ts             useSyncExternalStore binding
   components/
@@ -199,6 +241,8 @@ src/
     ui/       Icon, HeartButton, Knob, LevelMeter
   styles/base.css             design tokens, buttons, focus, motion
 scripts/generate-audio.mjs    original loop synthesiser
+api/wall.ts                   Vercel Function for the community wall
+server/wall.ts                wall handler, validation, Upstash + in-memory stores
 ```
 
 **Audio graph per deck:**

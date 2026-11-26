@@ -448,3 +448,14 @@
     border-radius: 28px;
   }
 }
+
+.info__byo-text {
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #4a3752;
+}
+.info__byo-btn {
+  width: 100%;
+  margin-top: 14px;
+}

@@ -7,7 +7,7 @@ declare namespace YT {
     host?: string;
     width?: string | number;
     height?: string | number;
-    videoId: string;
+    videoId?: string;
     playerVars?: Record<string, string | number>;
     events?: {
       onReady?: (e: PlayerEvent) => void;

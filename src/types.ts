@@ -11,6 +11,8 @@ export type CoverArtSpec = {
 
 export type Album = {
   id: string;
+  /** Added by the visitor from a pasted link (saved on their device only). */
+  userAdded?: boolean;
   artist: string;
   title: string;
   year?: string;

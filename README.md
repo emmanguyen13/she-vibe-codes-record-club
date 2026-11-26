@@ -114,6 +114,19 @@ Rules this follows:
 
 **Zing MP3:** there's no official public API, so it's not integrated. Unofficial "Zing APIs" scrape the site, and this project deliberately doesn't use them.
 
+### Visitors can add their own playlists
+There are two entry points: the **"+ Add your playlist"** button at the end of the shelf, and the **"Bring your playlist"** card in the info panel.
+
+- **What visitors can paste:** a playlist, album or track link from Spotify, Apple Music, YouTube or SoundCloud. The dialog recognises the service as they type.
+  - Spotify accepts `open.spotify.com/...` links (including `/intl-xx/`) and `spotify:` URIs.
+  - YouTube accepts `playlist?list=` links, or a `watch?v=…&list=…` link to start from a specific video.
+  - SoundCloud accepts `/sets/` playlists and single tracks.
+  - Apple Music accepts album, playlist or song links.
+- **Short share links** (`on.soundcloud.com`, `spotify.link`, `apple.co`) are rejected with a hint to open them and copy the full address. Anything else, such as Zing MP3, gets a friendly error.
+- **The new record:** it gets a name (optional), a spine colour and generated cover art. It appears on the shelf with a "mine" tag and opens straight away. Visitors can remove it with "Remove from my shelf" in the player.
+- **Storage:** records are saved in **that visitor's browser only** (`localStorage`, key `svc-record-club:my-records`, max 40). Nothing is uploaded, and other visitors can't see them. Links are re-validated on every load and only ever play through the services' official embeds.
+- **Shared shelves:** sharing a shelf between people (for example a community playlist wall) would need a backend or database. That isn't included.
+
 ### Optional upgrades that need developer accounts
 - **Apple MusicKit JS:** lets our own controls drive Apple Music. You need an Apple Developer Program membership and a MusicKit key, plus a small backend to sign the developer token (never ship the private key to the browser).
 - **Spotify Web Playback SDK:** gives full-track control in Shelf Mode only. Setup:
@@ -155,6 +168,7 @@ If `qrUrl` is `null`, an abstract sticker is shown instead of a fake QR code. If
 
 ### Files the owner should replace
 - `src/data/albums.ts`: your catalogue, plus any YouTube, SoundCloud, Apple Music or Spotify links
+- `src/data/catalogue.ts`: merges your catalogue with visitors' own links (spine colour swatches live here)
 - `public/audio/*`: your licensed audio (or keep the originals)
 - `src/config.ts`: copy, event label, credit line
 - Branding is typographic (an "SVC" monogram chip plus the wordmark). Swap in the official She Vibe Codes logo when one is supplied (`components/layout/Header.tsx`, the `brand-chip`).

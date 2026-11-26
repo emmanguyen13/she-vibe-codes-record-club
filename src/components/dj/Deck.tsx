@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Channel } from '../../audio/engine';
 import { useChannel } from '../../audio/useChannel';
 import { MAX_RATE, MIN_RATE, phaseAlignedPosition, syncRate } from '../../audio/mixMath';
-import { albumById } from '../../data/albums';
+import { catalogue, useCatalogue } from '../../data/catalogue';
 import { Icon } from '../ui/Icon';
 import { VinylRecord } from '../stage/VinylRecord';
 import { Tonearm } from '../stage/Tonearm';
@@ -25,8 +25,9 @@ export function Deck({ id, channel, other, onLoad }: Props) {
   const st = useChannel(channel);
   const ot = useChannel(other);
   const [note, setNote] = useState<string | null>(null);
-  const album = albumById(st.albumId);
-  const otherAlbum = albumById(ot.albumId);
+  useCatalogue(); // re-render if a visitor record is removed
+  const album = catalogue.find(st.albumId);
+  const otherAlbum = catalogue.find(ot.albumId);
   const ready = channel.canPlay;
   const playing = st.status === 'PLAYING';
   const effBpm = album?.bpm ? album.bpm * st.rate : null;

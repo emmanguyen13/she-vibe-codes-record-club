@@ -22,6 +22,8 @@ type Props = {
   onNext: () => void;
   sourceKind: SourceKind;
   onSourceKind: (k: SourceKind) => void;
+  /** Only for visitor-added records. */
+  onRemove?: () => void;
 };
 
 const statusCopy: Record<string, string> = {
@@ -34,7 +36,7 @@ const statusCopy: Record<string, string> = {
 };
 
 /** Compact, translucent "portable player" widget for Shelf Mode. */
-export function PlaybackControls({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind }: Props) {
+export function PlaybackControls({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind, onRemove }: Props) {
   const sources = availableSources(album);
   const source: PlaybackSource | undefined = sources.find((s) => s.kind === sourceKind) ?? sources[0];
   const ch = useChannel(engine.shelf);
@@ -119,7 +121,7 @@ export function PlaybackControls({ album, isFav, onFav, onPrev, onNext, sourceKi
         </div>
       )}
 
-      {source?.kind === 'youtube' && <YouTubeEmbed key={album.id} videoId={source.videoId} albumId={album.id} title={album.title} />}
+      {source?.kind === 'youtube' && <YouTubeEmbed key={album.id} videoId={source.videoId} listId={source.listId} albumId={album.id} title={album.title} />}
       {source?.kind === 'soundcloud' && <SoundCloudEmbed key={album.id} url={source.url} albumId={album.id} title={album.title} />}
       {source?.kind === 'spotify' && <IframeEmbed kind="spotify" src={source.embedUrl} title={`Spotify player: ${album.title}`} />}
       {source?.kind === 'apple' && <IframeEmbed kind="apple" src={source.embedUrl} title={`Apple Music player: ${album.title}`} />}
@@ -175,6 +177,11 @@ export function PlaybackControls({ album, isFav, onFav, onPrev, onNext, sourceKi
         <a className="player__link" href={source.openUrl} target="_blank" rel="noreferrer">
           Open in Apple Music <Icon name="external" className="icon icon--xs" />
         </a>
+      )}
+      {onRemove && (
+        <button type="button" className="player__remove" onClick={onRemove}>
+          <Icon name="close" className="icon icon--xs" /> Remove from my shelf
+        </button>
       )}
     </section>
   );

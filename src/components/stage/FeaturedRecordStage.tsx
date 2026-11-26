@@ -18,9 +18,10 @@ type Props = {
   onNext: () => void;
   sourceKind: SourceKind;
   onSourceKind: (k: SourceKind) => void;
+  onRemove?: () => void;
 };
 
-export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind }: Props) {
+export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourceKind, onSourceKind, onRemove }: Props) {
   const ch = useChannel(engine.shelf);
   const ext = useExternal();
   // Vinyl spins & tonearm drops only on a real "playing" report from the active player.
@@ -60,6 +61,7 @@ export function FeaturedRecordStage({ album, isFav, onFav, onPrev, onNext, sourc
           onNext={onNext}
           sourceKind={sourceKind}
           onSourceKind={onSourceKind}
+          onRemove={onRemove}
         />
       </div>
     </div>

@@ -38,7 +38,7 @@ export const RecordSpine = forwardRef<HTMLButtonElement, Props>(function RecordS
       className={`spine ${selected ? 'is-selected' : ''} ${available ? '' : 'is-unavailable'}`}
       style={{ '--spine': album.spineColor, '--spine-ink': ink, '--w': `${widthFor(album.id)}px` } as React.CSSProperties}
       onClick={onSelect}
-      aria-label={`${album.title} by ${album.artist}${available ? '' : ' (no preview)'}${isFav ? ', favourite' : ''}`}
+      aria-label={`${album.title} ${album.userAdded ? '(your link)' : `by ${album.artist}`}${available ? '' : ' (no preview)'}${isFav ? ', favourite' : ''}`}
     >
       <span className="spine__card-art" aria-hidden="true">
         <CoverArt album={album} showText={false} />
@@ -49,6 +49,7 @@ export const RecordSpine = forwardRef<HTMLButtonElement, Props>(function RecordS
       </span>
       <span className="spine__dot" aria-hidden="true">{isFav ? '♥' : motifs[index % motifs.length]}</span>
       {selected && <span className="spine__picked pixel" aria-hidden="true">on deck</span>}
+      {album.userAdded && <span className="spine__mine pixel" aria-hidden="true">mine</span>}
     </button>
   );
 });

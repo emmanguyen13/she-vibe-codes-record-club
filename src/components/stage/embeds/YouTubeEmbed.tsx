@@ -27,7 +27,7 @@ function loadYouTubeApi() {
  * YouTube API terms require); our transport drives it through the API and
  * the vinyl/tonearm follow YouTube's real state events.
  */
-export function YouTubeEmbed({ videoId, albumId, title }: { videoId: string; albumId: string; title: string }) {
+export function YouTubeEmbed({ videoId, listId, albumId, title }: { videoId: string | null; listId: string | null; albumId: string; title: string }) {
   const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,8 +50,14 @@ export function YouTubeEmbed({ videoId, albumId, title }: { videoId: string; alb
           host: 'https://www.youtube-nocookie.com',
           width: '100%',
           height: '100%',
-          videoId,
-          playerVars: { playsinline: 1, rel: 0, modestbranding: 1, origin: window.location.origin },
+          ...(videoId ? { videoId } : {}),
+          playerVars: {
+            playsinline: 1,
+            rel: 0,
+            modestbranding: 1,
+            origin: window.location.origin,
+            ...(listId ? { listType: 'playlist', list: listId } : {}),
+          },
           events: {
             onReady: (e) => {
               ready = true;
@@ -78,7 +84,7 @@ export function YouTubeEmbed({ videoId, albumId, title }: { videoId: string; alb
       if (host.current) host.current.innerHTML = '';
       external.detach(token);
     };
-  }, [videoId, albumId, title]);
+  }, [videoId, listId, albumId, title]);
 
   return <div className="embed embed--youtube" ref={host} />;
 }

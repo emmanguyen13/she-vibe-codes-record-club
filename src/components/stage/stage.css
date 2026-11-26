@@ -555,3 +555,21 @@
   .stage-sticker__svg { animation: none; }
   .embed--placeholder { animation: none; }
 }
+
+.player__remove {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sv-plum);
+}
+.player__remove:hover {
+  background: rgb(52 36 61 / 0.07);
+}

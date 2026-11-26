@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { engine } from '../../audio/engine';
-import { albumById, albums } from '../../data/albums';
+import { catalogue, useCatalogue } from '../../data/catalogue';
 import { Deck } from './Deck';
 import { Mixer } from './Mixer';
 import { TrackPicker } from './TrackPicker';
@@ -8,6 +8,7 @@ import './dj.css';
 
 export function DJMode({ pickedId }: { pickedId: string }) {
   const [target, setTarget] = useState<'A' | 'B' | null>(null);
+  const albums = useCatalogue();
   return (
     <div className="dj">
       <Deck id="A" channel={engine.A} other={engine.B} onLoad={() => setTarget('A')} />
@@ -19,7 +20,7 @@ export function DJMode({ pickedId }: { pickedId: string }) {
         pickedId={pickedId}
         onClose={() => setTarget(null)}
         onPick={(id) => {
-          if (target) void engine[target].load(albumById(id));
+          if (target) void engine[target].load(catalogue.find(id));
           setTarget(null);
         }}
       />

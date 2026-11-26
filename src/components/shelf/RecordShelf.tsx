@@ -10,13 +10,14 @@ type Props = {
   onSelect: (id: string) => void;
   favouritesOnly: boolean;
   onClearFilter: () => void;
+  onAdd: () => void;
 };
 
 /**
  * Horizontal, scrollable shelf. Implements the WAI-ARIA listbox pattern with
  * roving tabindex: ←/→ (and ↑/↓) move + select, Home/End jump.
  */
-export function RecordShelf({ albums, selectedId, isFav, onSelect, favouritesOnly, onClearFilter }: Props) {
+export function RecordShelf({ albums, selectedId, isFav, onSelect, favouritesOnly, onClearFilter, onAdd }: Props) {
   const refs = useRef(new Map<string, HTMLButtonElement>());
   const listRef = useRef<HTMLDivElement>(null);
   const selectedIndex = albums.findIndex((a) => a.id === selectedId);
@@ -85,11 +86,12 @@ export function RecordShelf({ albums, selectedId, isFav, onSelect, favouritesOnl
             onSelect={() => onSelect(a.id)}
           />
         ))}
-        <div className="shelf__bookend" aria-hidden="true">
-          <span className="pixel">{albums.length} records</span>
-          <span className="shelf__bookend-heart">♥</span>
-        </div>
       </div>
+      <button type="button" className="shelf__add" onClick={onAdd} aria-label={`Add your playlist to the shelf (${albums.length} records)`}>
+        <span className="shelf__add-plus" aria-hidden="true">+</span>
+        <span className="shelf__add-text">Add your playlist</span>
+        <span className="pixel shelf__add-count">{albums.length} records</span>
+      </button>
       <div className="shelf__plank" aria-hidden="true" />
     </div>
   );

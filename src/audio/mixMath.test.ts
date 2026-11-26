@@ -61,3 +61,26 @@ describe('source URL parsing', () => {
     expect(parseAppleMusicUrl('https://example.com/us/album/x/123')).toBeNull();
   });
 });
+
+import { detectLink, parseSpotifyUrl, parseYouTube } from './adapters';
+
+describe('pasted links', () => {
+  it('reads Spotify playlist links and URIs', () => {
+    expect(parseSpotifyUrl('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=abc')?.embedUrl).toBe('https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    expect(parseSpotifyUrl('https://open.spotify.com/intl-vi/album/4yP0hdKOZPNshxUOjY0cZj')?.type).toBe('album');
+    expect(parseSpotifyUrl('spotify:playlist:37i9dQZF1DXcBWIGoYBM5M')?.openUrl).toBe('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M');
+    expect(parseSpotifyUrl('https://open.spotify.com/artist/1Xyo4u8uXC1ZmMpatF05PJ')).toBeNull();
+  });
+  it('reads YouTube playlists', () => {
+    expect(parseYouTube('https://www.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI')).toEqual({ videoId: null, listId: 'PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI' });
+    expect(parseYouTube('https://www.youtube.com/watch?v=jNQXAC9IVRw&list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI')?.videoId).toBe('jNQXAC9IVRw');
+  });
+  it('detects each service and rejects others', () => {
+    expect(detectLink('https://music.apple.com/vn/playlist/chill/pl.u-abc123')).toMatchObject({ ok: true, kind: 'apple', what: 'Apple Music playlist' });
+    expect(detectLink('https://soundcloud.com/user/sets/my-mix')).toMatchObject({ ok: true, kind: 'soundcloud', what: 'SoundCloud playlist' });
+    expect(detectLink('https://www.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI')).toMatchObject({ ok: true, what: 'YouTube playlist' });
+    expect(detectLink('https://on.soundcloud.com/xyz')).toMatchObject({ ok: false });
+    expect(detectLink('https://zingmp3.vn/album/abc')).toMatchObject({ ok: false });
+    expect(detectLink('javascript:alert(1)')).toMatchObject({ ok: false });
+  });
+});

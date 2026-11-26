@@ -14,9 +14,11 @@ type Props = {
   liveDemoLabel: string;
   liveDemoEnabled: boolean;
   sourceKind: SourceKind;
+  myRecords: Album[];
+  onAdd: () => void;
 };
 
-export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLabel, liveDemoEnabled, sourceKind: kind }: Props) {
+export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLabel, liveDemoEnabled, sourceKind: kind, myRecords, onAdd }: Props) {
   const playable = liveDemoEnabled;
   return (
     <aside className="info" aria-label="About this project">
@@ -40,6 +42,33 @@ export function InfoPanel({ album, favourites, onSelect, onLiveDemo, liveDemoLab
           <span className="info__avatar" aria-hidden="true">✦</span>
           {siteConfig.credit}
         </p>
+      </section>
+
+      <section className="info-card info-card--byo" aria-labelledby="byo-h">
+        <h2 id="byo-h" className="info__h2">
+          Bring your playlist <span className="info__count">{myRecords.length}</span>
+        </h2>
+        <p className="info__byo-text">
+          Paste a playlist, album or track link from Spotify, Apple Music, YouTube or SoundCloud and it becomes a record on your shelf.
+        </p>
+        {myRecords.length > 0 && (
+          <ul className="favs">
+            {myRecords.map((a) => (
+              <li key={a.id}>
+                <button type="button" className="favs__item" onClick={() => onSelect(a.id)} aria-current={a.id === album.id || undefined}>
+                  <CoverArt album={a} showText={false} className="favs__thumb" />
+                  <span>
+                    <strong>{a.title}</strong>
+                    <small>{a.genre}</small>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button type="button" className="pill-btn pill-btn--primary info__byo-btn" onClick={onAdd}>
+          <Icon name="plus" /> Add your playlist
+        </button>
       </section>
 
       <section className="info-card" id="about-audio" aria-labelledby="audio-h">

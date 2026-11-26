@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Mode } from './types';
-import { albums, albumById } from './data/albums';
+import { catalogue, useCatalogue } from './data/catalogue';
 import { engine } from './audio/engine';
 import { availableSources, describeSource, type SourceKind } from './audio/adapters';
 import { external } from './audio/external/store';
@@ -15,10 +15,13 @@ import { InfoPanel } from './components/layout/InfoPanel';
 import { FeaturedRecordStage } from './components/stage/FeaturedRecordStage';
 import { RecordShelf } from './components/shelf/RecordShelf';
 import { DJMode } from './components/dj/DJMode';
+import { AddRecordDialog } from './components/shelf/AddRecordDialog';
 import './components/layout/layout.css';
 
 export default function App() {
+  const albums = useCatalogue();
   const [selectedId, setSelectedId] = useState(albums[0].id);
+  const [adding, setAdding] = useState(false);
   const [mode, setMode] = useState<Mode>('shelf');
   const [favouritesOnly, setFavouritesOnly] = useState(false);
   const { favs, toggle, isFav } = useFavourites();
@@ -26,13 +29,13 @@ export default function App() {
   const ext = useExternal();
   const [sourcePref, setSourcePref] = useState<{ albumId: string; kind: SourceKind } | null>(null);
 
-  const album = albumById(selectedId) ?? albums[0];
+  const album = albums.find((a) => a.id === selectedId) ?? albums[0];
   const sources = availableSources(album);
   const sourceKind: SourceKind =
     sourcePref?.albumId === album.id && sources.some((s) => s.kind === sourcePref.kind)
       ? sourcePref.kind
       : describeSource(album).kind;
-  const visible = useMemo(() => (favouritesOnly ? albums.filter((a) => favs.includes(a.id)) : albums), [favouritesOnly, favs]);
+  const visible = useMemo(() => (favouritesOnly ? albums.filter((a) => favs.includes(a.id)) : albums), [favouritesOnly, favs, albums]);
 
   // Load the featured record into the Shelf channel whenever it changes.
   useEffect(() => {
@@ -46,7 +49,16 @@ export default function App() {
       const next = list[(i + dir + list.length) % list.length];
       setSelectedId(next.id);
     },
-    [visible, selectedId],
+    [visible, selectedId, albums],
+  );
+
+  const removeRecord = useCallback(
+    (id: string) => {
+      const i = albums.findIndex((a) => a.id === id);
+      if (id === selectedId) setSelectedId((albums[i - 1] ?? albums[0]).id);
+      catalogue.remove(id);
+    },
+    [albums, selectedId],
   );
 
   const changeMode = useCallback(
@@ -71,7 +83,7 @@ export default function App() {
       }
       setMode(m);
     },
-    [mode, album],
+    [mode, album, albums],
   );
 
   const theme = album.themeColor || FALLBACK_THEME;
@@ -120,6 +132,7 @@ export default function App() {
                 onNext={() => step(1)}
                 sourceKind={sourceKind}
                 onSourceKind={(kind) => setSourcePref({ albumId: album.id, kind })}
+                onRemove={album.userAdded ? () => removeRecord(album.id) : undefined}
               />
             ) : (
               <DJMode pickedId={album.id} />
@@ -132,6 +145,7 @@ export default function App() {
                 onSelect={setSelectedId}
                 favouritesOnly={favouritesOnly}
                 onClearFilter={() => setFavouritesOnly(false)}
+                onAdd={() => setAdding(true)}
               />
             </div>
           </div>
@@ -144,6 +158,8 @@ export default function App() {
           liveDemoLabel={shelfPlaying ? 'lift the needle' : 'drop the needle'}
           liveDemoEnabled={liveDemoEnabled}
           sourceKind={mode === 'dj' ? describeSource(album).kind : sourceKind}
+          myRecords={albums.filter((a) => a.userAdded)}
+          onAdd={() => setAdding(true)}
           onLiveDemo={() => {
             if (mode !== 'shelf') {
               changeMode('shelf');
@@ -155,6 +171,16 @@ export default function App() {
           }}
         />
       </main>
+      <AddRecordDialog
+        open={adding}
+        onClose={() => setAdding(false)}
+        onAdded={(id) => {
+          setAdding(false);
+          setFavouritesOnly(false);
+          setSelectedId(id);
+          if (mode !== 'shelf') changeMode('shelf');
+        }}
+      />
     </div>
   );
 }

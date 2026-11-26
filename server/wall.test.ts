@@ -56,3 +56,14 @@ describe('wall API', () => {
     expect(cleanTitle('a'.repeat(100))).toHaveLength(LIMITS.titleLen);
   });
 });
+
+import { storeFromEnv } from './wall';
+describe('storeFromEnv', () => {
+  it('finds plain, prefixed and Upstash-named credentials', () => {
+    expect(storeFromEnv({ KV_REST_API_URL: 'https://a', KV_REST_API_TOKEN: 't' })).not.toBeNull();
+    expect(storeFromEnv({ STORAGE_KV_REST_API_URL: 'https://a', STORAGE_KV_REST_API_TOKEN: 't' })).not.toBeNull();
+    expect(storeFromEnv({ UPSTASH_REDIS_REST_URL: 'https://a', UPSTASH_REDIS_REST_TOKEN: 't' })).not.toBeNull();
+    expect(storeFromEnv({ KV_REST_API_URL: 'https://a', KV_REST_API_READ_ONLY_TOKEN: 't' })).toBeNull();
+    expect(storeFromEnv({})).toBeNull();
+  });
+});

@@ -62,8 +62,8 @@ async function clientKey(req: Request): Promise<string> {
   return [...new Uint8Array(digest)].slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function handleWall(req: Request, store: WallStore | null, adminToken?: string): Promise<Response> {
-  if (!store) return json({ error: 'not_configured', message: 'The community wall database isn’t connected yet.' }, 503);
+export async function handleWall(req: Request, store: WallStore | null, adminToken?: string, diag?: string[]): Promise<Response> {
+  if (!store) return json({ error: 'not_configured', message: 'The community wall database isn’t connected yet.', found: diag ?? [] }, 503);
   const url = new URL(req.url);
 
   try {
@@ -186,8 +186,26 @@ export function memoryStore(seed: WallEntry[] = []): WallStore {
   };
 }
 
+/**
+ * Finds Upstash credentials. Vercel's Upstash integration names them
+ * KV_REST_API_URL / KV_REST_API_TOKEN, optionally with a custom prefix
+ * (e.g. STORAGE_KV_REST_API_URL); Upstash's own names also work.
+ */
 export function storeFromEnv(env: Record<string, string | undefined>): WallStore | null {
-  const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
-  const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
+  const pick = (suffixes: string[]) => {
+    for (const suf of suffixes) {
+      if (env[suf]) return env[suf];
+      const key = Object.keys(env).find((k) => k.endsWith(`_${suf}`) && !k.includes('READ_ONLY') && env[k]);
+      if (key) return env[key];
+    }
+    return undefined;
+  };
+  const url = pick(['KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL', 'REDIS_REST_URL']);
+  const token = pick(['KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN', 'REDIS_REST_TOKEN']);
   return url && token ? redisStore(url, token) : null;
+}
+
+/** Which credential variables were found (names only, never values) — for diagnostics. */
+export function envDiagnostics(env: Record<string, string | undefined>) {
+  return Object.keys(env).filter((k) => /(KV|REDIS|UPSTASH)/.test(k) && !!env[k]).sort();
 }
